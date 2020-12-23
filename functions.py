@@ -105,35 +105,6 @@ def best_compenents (tf_idf,n_components_initial,n_components_final,goal):
                 break
     return components
 
-def best_compenents2 (tf_idf,n_components,step):
-    #Take like input the dictionary obtained with TFIDF Vectorizer, N_components (limit for "forloop"), step (In this way I can advance in the number of components) 
-    lista = [] #Create empty list
-    for k in range (200, n_components, step):
-        lista.append(k) #Append in this list the n_components with forloop
-    dictionary = dict.fromkeys(lista, 0) #Create a dictionary with keys the element of the list. For each keys i set the value = 0 
-    for k in tqdm(range (200, n_components,step)):
-        svd = TruncatedSVD(n_components=k)
-        svd.fit(tf_idf) #Apply the SVD Method with a number components defined by for loop
-        variance = float(np.cumsum(np.round(svd.explained_variance_ratio_, decimals=3)*100)[-1:]) #Obtain the variance respect n_components = k
-        dictionary[k] = variance #Update, in my dictionary, the value for keys = k with variance
-        del svd #Remove svd obtain with n_components = k
-    return dictionary #return the dictionary
-    
-def plot_components (dictionary):
-    #Plot with seaborn the dictionary obtained by function best_components2. Before this i need to obtain a dataset from this dictionary
-    # The dataset contains two columns ['Number of Components', 'Variance']
-    fig_dims = (12, 8)
-    fig, ax = plt.subplots(figsize=fig_dims)
-    dataset = pd.DataFrame.from_dict(dictionary, orient='index').reset_index()
-    dataset.columns = ['Number of Components', 'Variance']
-    ax = sns.barplot(data = dataset, x = "Number of Components", y= "Variance",palette="ch:.25") 
-    plt.ylim(0,100)
-    sns.set_style("whitegrid")
-    plt.title('Trade-Off Number of Components/Variance', size=20)
-    plt.ylabel('Variance', size=18)
-    plt.xlabel('Number of components', size=18)
-    plt.show()
-
 def SVDMethod(tf_idf, k):
     #SVD Method, in this case k is defined by the function best_componens
     svd = TruncatedSVD(n_components=k)
