@@ -10,7 +10,6 @@ from tqdm import tqdm
 from sklearn.decomposition import TruncatedSVD
 from sklearn.feature_extraction.text import CountVectorizer
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import scipy
@@ -129,8 +128,9 @@ def plot_components (dictionary):
     ax = sns.barplot(data = dataset, x = "Number of Components", y= "Variance",palette="ch:.25") 
     plt.ylim(0,100)
     sns.set_style("whitegrid")
-    plt.title('Trade-Off Number of Components/Variacne')
-    ax.set(xlabel='Number of components', ylabel='Variance')
+    plt.title('Trade-Off Number of Components/Variance', size=20)
+    plt.ylabel('Variance', size=18)
+    plt.xlabel('Number of components', size=18)
     plt.show()
 
 def SVDMethod(tf_idf, k):
