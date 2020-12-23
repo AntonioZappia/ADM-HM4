@@ -5,12 +5,15 @@ from nltk.corpus import stopwords
 from nltk.stem.wordnet import WordNetLemmatizer
 from nltk.tokenize import word_tokenize
 from nltk import pos_tag
-from nltk.corpus import words
+from nltk.corpus import words as Words
 from tqdm import tqdm
 from sklearn.decomposition import TruncatedSVD
+from sklearn.feature_extraction.text import CountVectorizer
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+import scipy
+from wordcloud import WordCloud
 
 ##------- HASH FUNCTION -------##
 
@@ -30,7 +33,7 @@ class HyperLogLog:
         self.m = 2**b 
         self.M = np.full(self.m, 0) #An array with size equal to m initialized with all values equal to zero.
         self.a_m = 0.7213 / (1 + 1.079/self.m) #This value was obtained from a publication reported in our references. It is a value that depends only on m
-        print("Error Filter:", 1.04/sqrt(self.m), '%')
+        print('b:', b, "=> Error Filter:", 1.04/sqrt(self.m), '%')
     
     def add(self, s):
         x = hash(s, max_n_bit_hash_value=self.max_n_bit) #We apply our hash functon for each string that we put in input
@@ -75,7 +78,7 @@ def save_dataset(df):
     for i in range(len(df)):
         if df.loc[i,"Text"] == "" :
             df.drop(i,inplace=True)
-    with open("New_database.csv", "w") as text_file:
+    with open("./data/CleanDatabase.csv", "w") as text_file:
         text_file.write(df.to_csv(index=False))
 
 def tfidf_vectorizer(df):
@@ -104,10 +107,10 @@ def best_compenents (tf_idf,n_components_initial,n_components_final,goal):
 def best_compenents2 (tf_idf,n_components,step):
     #Take like input the dictionary obtained with TFIDF Vectorizer, N_components (limit for "forloop"), step (In this way I can advance in the number of components) 
     lista = [] #Create empty list
-    for k in range (1, n_components,step):
+    for k in range (200, n_components, step):
         lista.append(k) #Append in this list the n_components with forloop
     dictionary = dict.fromkeys(lista, 0) #Create a dictionary with keys the element of the list. For each keys i set the value = 0 
-    for k in tqdm(range (1, n_components,step)):
+    for k in tqdm(range (200, n_components,step)):
         svd = TruncatedSVD(n_components=k)
         svd.fit(tf_idf) #Apply the SVD Method with a number components defined by for loop
         variance = float(np.cumsum(np.round(svd.explained_variance_ratio_, decimals=3)*100)[-1:]) #Obtain the variance respect n_components = k
@@ -129,10 +132,10 @@ def plot_components (dictionary):
     ax.set(xlabel='Number of components', ylabel='Variance')
     plt.show()
 
-def SVDMethod(tf_idf,k):
+def SVDMethod(tf_idf, k):
     #SVD Method, in this case k is defined by the function best_componens
     svd = TruncatedSVD(n_components=k)
-    new_matrix = svd.fit_transform(tfidf_new)
+    new_matrix = svd.fit_transform(tf_idf)
     return new_matrix
 
 class KMeans:
@@ -173,7 +176,7 @@ class KMeans:
                 changes_values.append(n_changes)
             
             
-            if n_changes: # If there are no changes it converges so break the loop
+            if not n_changes: # If there are no changes it converges so break the loop
                 break
             
         # If plot_cluster_evolution is true plot the inertia values and the n. changes values
@@ -220,7 +223,7 @@ class KMeans:
         
         return res
 
-def elbow_method(X,l,plot_result = False):
+def elbow_method(X, l, plot_result = False):
     elbow = {} #Create empty dictionary
     for k in tqdm(l): #For loop for each element in list l
         elbow_model = SK_KMeans(n_clusters=k) #KMeans algorithm from scikit-learn with number cluster = K
@@ -234,18 +237,18 @@ def elbow_method(X,l,plot_result = False):
     
     return elbow
 
-def complete_dataset(df):
+def store_complete_dataset(df):
     #We want to save the dataset that contains for each ProductID the cluster associated through the join between the initial dataset
     #and the one we worked with in Clustering (on which there is Groupby with respect to ProductID) containing
     #ProductID column, Clean Text and number of Cluster.
     product_cluster = df.set_index('ProductId')['Cluster']
     reviews = pd.read_csv('./data/Reviews.csv')
     rev_complete = reviews.join(product_cluster, on='ProductId')
-    with open("Complete_dataset.csv", "w") as text_file:
+    with open("./data/Complete_dataset.csv", "w", encoding="utf-8") as text_file:
         text_file.write(rev_complete.to_csv(index=False))
 
 def show_word_cloud(df):
-    wordlist = words.words() #List of all word from nltk library
+    wordlist = Words.words() #List of all word from nltk library
     cluster_text = df.groupby('Cluster').agg({'Text': ' '.join}) #We take a groupby respect Cluster and unite the text for each cluster
     for i in cluster_text.index:
         txt = cluster_text.loc[i].Text
